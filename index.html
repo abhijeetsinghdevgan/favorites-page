@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Favorites</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f17;
+      --surface: #1a1a2e;
+      --card: #16213e;
+      --border: #2a2a4a;
+      --accent: #e8c97a;
+      --accent2: #a78bfa;
+      --accent3: #f472b6;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --fav: #f43f5e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0f0f17 0%, #1a1a2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 2rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .fav-count {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .fav-count:hover { border-color: var(--fav); color: var(--fav); }
+    .fav-count .heart { color: var(--fav); font-size: 1rem; }
+    #count-num { font-weight: 700; color: var(--text); }
+
+    nav {
+      display: flex;
+      gap: 0;
+      max-width: 1200px;
+      margin: 1.5rem auto 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    nav::-webkit-scrollbar { display: none; }
+
+    .tab {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      background: none;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab .tab-icon { margin-right: 0.4rem; }
+
+    /* ── Main ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ── Saved Panel ── */
+    #saved-panel {
+      display: none;
+      margin-bottom: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    #saved-panel.visible { display: block; }
+
+    .saved-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .saved-header h2 { font-size: 1rem; font-weight: 600; }
+    .saved-header h2 span { color: var(--fav); }
+
+    .clear-btn {
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .clear-btn:hover { color: var(--fav); }
+
+    #saved-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+    }
+
+    .saved-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.82rem;
+    }
+
+    .saved-chip .chip-remove {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .saved-chip .chip-remove:hover { color: var(--fav); }
+
+    /* ── Section ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-icon {
+      font-size: 1.6rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .section-header h1 { font-size: 1.4rem; font-weight: 700; }
+    .section-header p { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 1rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent2);
+      box-shadow: 0 8px 32px rgba(167,139,250,0.12);
+    }
+
+    .card.favorited {
+      border-color: var(--fav);
+      box-shadow: 0 0 0 1px rgba(244,63,94,0.15);
+    }
+
+    .card-thumb {
+      width: 100%;
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-thumb::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, var(--card) 100%);
+    }
+
+    .badge {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.6rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      z-index: 2;
+    }
+
+    .badge-new { background: var(--accent); color: #0f0f17; }
+    .badge-hot { background: #ef4444; color: #fff; }
+    .badge-top { background: var(--accent2); color: #fff; }
+
+    .fav-btn {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.6rem;
+      width: 2rem;
+      height: 2rem;
+      background: rgba(15,15,23,0.7);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      z-index: 2;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    }
+
+    .fav-btn:hover { transform: scale(1.15); border-color: var(--fav); }
+    .fav-btn.on { background: var(--fav); border-color: var(--fav); }
+
+    .card-body { padding: 0.9rem 1rem 1rem; }
+
+    .card-meta {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.3rem;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 0.3rem;
+    }
+
+    .card-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-stat { font-size: 0.72rem; color: var(--muted); }
+    .card-stat strong { color: var(--accent); font-weight: 600; }
+
+    .tag {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      background: rgba(232,201,122,0.1);
+      color: var(--accent);
+      border-radius: 6px;
+      border: 1px solid rgba(232,201,122,0.2);
+    }
+
+    /* ── Social Section ── */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .platform-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      transition: border-color 0.2s, transform 0.2s;
+      position: relative;
+    }
+
+    .platform-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent2);
+    }
+
+    .platform-card.favorited { border-color: var(--fav); }
+
+    .platform-top {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .platform-icon {
+      font-size: 1.6rem;
+      width: 2.8rem;
+      height: 2.8rem;
+      background: var(--surface);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+    }
+
+    .platform-name { font-weight: 700; font-size: 1rem; }
+    .platform-handle { font-size: 0.75rem; color: var(--muted); }
+
+    .platform-fav {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 2rem;
+      height: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    }
+
+    .platform-fav:hover { transform: scale(1.15); border-color: var(--fav); }
+    .platform-fav.on { background: var(--fav); border-color: var(--fav); }
+
+    .platform-stats {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .pstat { font-size: 0.78rem; color: var(--muted); }
+    .pstat strong { display: block; font-size: 1rem; color: var(--text); font-weight: 700; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 0.7rem 1.4rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 999;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast .t-icon { font-size: 1rem; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      header { padding: 1.25rem 1rem 0; }
+      main { padding: 1.25rem 1rem; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+      .platform-grid { grid-template-columns: 1fr; }
+      .logo { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">My <span>Favorites</span></div>
+    <button class="fav-count" onclick="toggleSaved()">
+      <span class="heart">♥</span>
+      <span id="count-num">0</span> saved
+    </button>
+  </div>
+  <nav>
+    <button class="tab active" onclick="switchTab('books', this)">
+      <span class="tab-icon">📚</span> Bookstores
+    </button>
+    <button class="tab" onclick="switchTab('games', this)">
+      <span class="tab-icon">🎮</span> Video Games
+    </button>
+    <button class="tab" onclick="switchTab('podcasts', this)">
+      <span class="tab-icon">🎙️</span> Podcasts
+    </button>
+    <button class="tab" onclick="switchTab('streaming', this)">
+      <span class="tab-icon">📺</span> Streaming
+    </button>
+    <button class="tab" onclick="switchTab('social', this)">
+      <span class="tab-icon">🌐</span> Platforms
+    </button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- Saved Panel -->
+  <div id="saved-panel">
+    <div class="saved-header">
+      <h2><span>♥</span> Your Saved Favorites</h2>
+      <button class="clear-btn" onclick="clearAll()">Clear all</button>
+    </div>
+    <div id="saved-list"></div>
+  </div>
+
+  <!-- BOOKSTORES -->
+  <section id="books" class="section active">
+    <div class="section-header">
+      <div class="section-icon">📚</div>
+      <div>
+        <h1>Bookstores</h1>
+        <p>Independent shops, chains &amp; online havens for book lovers</p>
+      </div>
+    </div>
+    <div class="grid" id="books-grid"></div>
+  </section>
+
+  <!-- VIDEO GAMES -->
+  <section id="games" class="section">
+    <div class="section-header">
+      <div class="section-icon">🎮</div>
+      <div>
+        <h1>Video Games</h1>
+        <p>All-time favorites across every genre and platform</p>
+      </div>
+    </div>
+    <div class="grid" id="games-grid"></div>
+  </section>
+
+  <!-- PODCASTS -->
+  <section id="podcasts" class="section">
+    <div class="section-header">
+      <div class="section-icon">🎙️</div>
+      <div>
+        <h1>Podcasts</h1>
+        <p>Shows worth listening to on repeat</p>
+      </div>
+    </div>
+    <div class="grid" id="podcasts-grid"></div>
+  </section>
+
+  <!-- STREAMING -->
+  <section id="streaming" class="section">
+    <div class="section-header">
+      <div class="section-icon">📺</div>
+      <div>
+        <h1>Streaming Services</h1>
+        <p>Where the best content lives</p>
+      </div>
+    </div>
+    <div class="grid" id="streaming-grid"></div>
+  </section>
+
+  <!-- SOCIAL PLATFORMS -->
+  <section id="social" class="section">
+    <div class="section-header">
+      <div class="section-icon">🌐</div>
+      <div>
+        <h1>Platforms</h1>
+        <p>Profiles &amp; spaces worth following across the web</p>
+      </div>
+    </div>
+    <div class="platform-grid" id="social-grid"></div>
+  </section>
+
+</main>
+
+<!-- Toast -->
+<div id="toast"><span class="t-icon">♥</span><span id="toast-msg">Saved!</span></div>
+
+<script>
+  // ── DATA ──────────────────────────────────────────────────────────
+  const DATA = {
+    books: [
+      { id:'b1', emoji:'🏛️', title:'Powell\'s City of Books', meta:'Portland, OR', sub:'The world\'s largest independent bookstore — nine color-coded rooms, over a million books.', stat:'1 million+', statLabel:'books', tag:'Independent', badge:'top' },
+      { id:'b2', emoji:'📖', title:'Shakespeare & Co.', meta:'Paris, France', sub:'A legendary Left Bank institution where writers slept among the shelves since 1951.', stat:'1951', statLabel:'est.', tag:'Iconic', badge:'top' },
+      { id:'b3', emoji:'☕', title:'Books & Brews', meta:'Local Chain', sub:'Where craft beer meets curated reading — a perfect combo of genres and pints.', stat:'40+', statLabel:'locations', tag:'Café', badge:'new' },
+      { id:'b4', emoji:'🌿', title:'The Last Bookshop', meta:'Online & Pop-up', sub:'Curated rare finds, signed editions, and first prints sourced globally.', stat:'Rare', statLabel:'editions', tag:'Rare Finds', badge:null },
+      { id:'b5', emoji:'🛒', title:'Bookshop.org', meta:'Online', sub:'The ethical Amazon alternative — 30% of every sale goes to indie bookstores.', stat:'$30M+', statLabel:'to indie stores', tag:'Online', badge:'hot' },
+      { id:'b6', emoji:'🌙', title:'Midnight Books', meta:'Brooklyn, NY', sub:'Open until midnight — cozy lighting, curated fiction, and warm chai.', stat:'Midnight', statLabel:'closing time', tag:'Nighttime', badge:'new' },
+    ],
+    games: [
+      { id:'g1', emoji:'🐉', title:'Elden Ring', meta:'FromSoftware • 2022', sub:'An open-world masterpiece co-created with George R.R. Martin. Pure suffering, pure joy.', stat:'96', statLabel:'Metacritic', tag:'Action RPG', badge:'top' },
+      { id:'g2', emoji:'🌌', title:'The Witcher 3', meta:'CD Projekt Red • 2015', sub:'Still the gold standard of open-world storytelling a decade later.', stat:'93', statLabel:'Metacritic', tag:'RPG', badge:'top' },
+      { id:'g3', emoji:'🎵', title:'Hades', meta:'Supergiant Games • 2020', sub:'The roguelike that made the genre mainstream — with a killer soundtrack.', stat:'93', statLabel:'Metacritic', tag:'Roguelike', badge:'hot' },
+      { id:'g4', emoji:'🏝️', title:'Hollow Knight', meta:'Team Cherry • 2017', sub:'One of the greatest indie games ever made. Brutal, beautiful, hand-drawn.', stat:'90', statLabel:'Metacritic', tag:'Indie', badge:null },
+      { id:'g5', emoji:'🌊', title:'Red Dead Redemption 2', meta:'Rockstar • 2018', sub:'A cinematic slow burn that redefined what open worlds could feel like.', stat:'97', statLabel:'Metacritic', tag:'Open World', badge:'top' },
+      { id:'g6', emoji:'🌿', title:'Stardew Valley', meta:'ConcernedApe • 2016', sub:'Built by one person. Sold 30M copies. The cozy game that started everything.', stat:'89', statLabel:'Metacritic', tag:'Simulation', badge:'new' },
+    ],
+    podcasts: [
+      { id:'p1', emoji:'🧠', title:'Huberman Lab', meta:'Andrew Huberman', sub:'Science-based tools for everyday life — sleep, focus, fitness, and more.', stat:'#1', statLabel:'Health Charts', tag:'Science', badge:'hot' },
+      { id:'p2', emoji:'💼', title:'How I Built This', meta:'NPR / Guy Raz', sub:'Behind-the-scenes stories from the founders of the world\'s most successful companies.', stat:'500+', statLabel:'episodes', tag:'Business', badge:'top' },
+      { id:'p3', emoji:'🔍', title:'Serial', meta:'Sarah Koenig', sub:'The podcast that made true crime mainstream — Season 1 changed everything.', stat:'500M+', statLabel:'downloads', tag:'True Crime', badge:'top' },
+      { id:'p4', emoji:'🎤', title:'Lex Fridman Podcast', meta:'Lex Fridman', sub:'Long-form conversations with scientists, engineers, artists, and world leaders.', stat:'3hr+', statLabel:'avg. episode', tag:'Interview', badge:null },
+      { id:'p5', emoji:'📈', title:'My First Million', meta:'Sam Parr & Shaan Puri', sub:'Business ideas, trends, and startup stories — entertaining and genuinely useful.', stat:'$1M+', statLabel:'ideas discussed', tag:'Entrepreneurship', badge:'new' },
+      { id:'p6', emoji:'🌍', title:'99% Invisible', meta:'Roman Mars', sub:'Stories about the unnoticed design and architecture that shapes our world.', stat:'600+', statLabel:'episodes', tag:'Design', badge:null },
+    ],
+    streaming: [
+      { id:'s1', emoji:'📡', title:'Netflix', meta:'Streaming Giant', sub:'The original streaming king — from Stranger Things to elite documentaries.', stat:'238M+', statLabel:'subscribers', tag:'All Genres', badge:'top' },
+      { id:'s2', emoji:'🏰', title:'Disney+', meta:'Disney / Marvel / Star Wars', sub:'Marvel, Pixar, Star Wars, National Geographic — the ultimate franchise hub.', stat:'150M+', statLabel:'subscribers', tag:'Family & Sci-Fi', badge:'hot' },
+      { id:'s3', emoji:'🎭', title:'HBO Max', meta:'Warner Bros. Discovery', sub:'The prestige TV platform — Game of Thrones, The Wire, Euphoria, Succession.', stat:'95M+', statLabel:'subscribers', tag:'Premium', badge:'top' },
+      { id:'s4', emoji:'🎬', title:'A24 on Mubi', meta:'MUBI', sub:'Curated arthouse cinema — where film buffs go for the movies no one else shows.', stat:'30+', statLabel:'countries', tag:'Arthouse', badge:'new' },
+      { id:'s5', emoji:'🎙️', title:'Spotify', meta:'Music & Podcasts', sub:'100M+ songs, 5M+ podcasts — and an algorithm that somehow knows your mood.', stat:'602M+', statLabel:'users', tag:'Music', badge:'hot' },
+      { id:'s6', emoji:'📺', title:'YouTube Premium', meta:'Google', sub:'No ads, background play, and YouTube Originals — surprisingly worth it.', stat:'2.7B+', statLabel:'users (free)', tag:'Video', badge:null },
+    ],
+  };
+
+  const SOCIAL = [
+    { id:'pl1', icon:'💼', name:'LinkedIn', handle:'Professional Network', desc:'Where thought leaders share insights, job updates, and industry news.', stat1:'1B+', label1:'members', stat2:'58M+', label2:'companies', badge:'top' },
+    { id:'pl2', icon:'🐙', name:'GitHub', handle:'Open Source Hub', desc:'Where developers showcase work, contribute to projects, and build in public.', stat1:'100M+', label1:'developers', stat2:'420M+', label2:'repositories', badge:'top' },
+    { id:'pl3', icon:'🎨', name:'Behance', handle:'Creative Portfolio', desc:'The go-to place for designers, illustrators, and creative professionals worldwide.', stat1:'50M+', label1:'members', stat2:'15M+', label2:'projects', badge:'hot' },
+    { id:'pl4', icon:'📸', name:'Instagram', handle:'Visual Stories', desc:'Photography, reels, and brand content — still the king of visual culture.', stat1:'2B+', label1:'monthly users', stat2:'500M+', label2:'daily stories', badge:null },
+    { id:'pl5', icon:'🐦', name:'X (Twitter)', handle:'Real-time Pulse', desc:'Breaking news, developer threads, and discourse — the internet\'s town square.', stat1:'350M+', label1:'monthly users', stat2:'500M+', label2:'tweets/day', badge:null },
+    { id:'pl6', icon:'🎥', name:'YouTube', handle:'Video & Community', desc:'Subscribe, like, and build a curated library of your favorite creators.', stat1:'2.7B+', label1:'monthly users', stat2:'500hrs', label2:'uploaded/min', badge:'new' },
+  ];
+
+  // ── STATE ─────────────────────────────────────────────────────────
+  const favorites = new Set(JSON.parse(localStorage.getItem('fav_items') || '[]'));
+  const favMeta = JSON.parse(localStorage.getItem('fav_meta') || '{}');
+
+  function save() {
+    localStorage.setItem('fav_items', JSON.stringify([...favorites]));
+    localStorage.setItem('fav_meta', JSON.stringify(favMeta));
+  }
+
+  // ── RENDER CARDS ─────────────────────────────────────────────────
+  function renderGrid(containerId, items) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = items.map(item => {
+      const on = favorites.has(item.id);
+      const bg = getBg(item.id);
+      return `
+        <div class="card ${on ? 'favorited' : ''}" id="card-${item.id}">
+          <div class="card-thumb" style="background:${bg}">
+            ${item.badge ? `<span class="badge badge-${item.badge}">${item.badge}</span>` : ''}
+            <button class="fav-btn ${on ? 'on' : ''}" id="fbtn-${item.id}"
+              onclick="toggleFav('${item.id}','${escQ(item.title)}')">
+              ${on ? '♥' : '♡'}
+            </button>
+            <span style="position:relative;z-index:1">${item.emoji}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-meta">${item.meta}</div>
+            <div class="card-title">${item.title}</div>
+            <div class="card-sub">${item.sub}</div>
+            <div class="card-footer">
+              <div class="card-stat"><strong>${item.stat}</strong> ${item.statLabel}</div>
+              <span class="tag">${item.tag}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderSocial() {
+    const el = document.getElementById('social-grid');
+    el.innerHTML = SOCIAL.map(p => {
+      const on = favorites.has(p.id);
+      return `
+        <div class="platform-card ${on ? 'favorited' : ''}" id="card-${p.id}">
+          <div class="platform-top">
+            <div class="platform-icon">${p.icon}</div>
+            <div>
+              <div class="platform-name">${p.name}${p.badge ? ` <span class="badge badge-${p.badge}" style="font-size:0.6rem;padding:0.15rem 0.4rem">${p.badge}</span>` : ''}</div>
+              <div class="platform-handle">${p.handle}</div>
+            </div>
+          </div>
+          <button class="platform-fav ${on ? 'on' : ''}" id="fbtn-${p.id}"
+            onclick="toggleFav('${p.id}','${escQ(p.name)}')">
+            ${on ? '♥' : '♡'}
+          </button>
+          <p style="font-size:0.82rem;color:var(--muted);line-height:1.55;margin-bottom:1rem">${p.desc}</p>
+          <div class="platform-stats">
+            <div class="pstat"><strong>${p.stat1}</strong>${p.label1}</div>
+            <div class="pstat"><strong>${p.stat2}</strong>${p.label2}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function escQ(str) { return str.replace(/'/g, "\\'"); }
+
+  // ── TOGGLE FAV ────────────────────────────────────────────────────
+  function toggleFav(id, title) {
+    if (favorites.has(id)) {
+      favorites.delete(id);
+      delete favMeta[id];
+      showToast('♡', `Removed "${title}"`);
+    } else {
+      favorites.add(id);
+      favMeta[id] = title;
+      showToast('♥', `Saved "${title}"`);
+    }
+    save();
+    updateCard(id);
+    updateCountBadge();
+    renderSavedChips();
+  }
+
+  function updateCard(id) {
+    const on = favorites.has(id);
+    const card = document.getElementById(`card-${id}`);
+    const btn = document.getElementById(`fbtn-${id}`);
+    if (!card || !btn) return;
+    card.classList.toggle('favorited', on);
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '♥' : '♡';
+  }
+
+  // ── SAVED PANEL ───────────────────────────────────────────────────
+  function toggleSaved() {
+    const panel = document.getElementById('saved-panel');
+    panel.classList.toggle('visible');
+    renderSavedChips();
+  }
+
+  function renderSavedChips() {
+    const list = document.getElementById('saved-list');
+    if (favorites.size === 0) {
+      list.innerHTML = '<span style="font-size:0.85rem;color:var(--muted)">No favorites yet — heart something above!</span>';
+      return;
+    }
+    list.innerHTML = [...favorites].map(id => `
+      <div class="saved-chip" id="chip-${id}">
+        <span>${favMeta[id] || id}</span>
+        <span class="chip-remove" onclick="toggleFav('${id}','${escQ(favMeta[id] || id)}')">✕</span>
+      </div>`).join('');
+  }
+
+  function clearAll() {
+    [...favorites].forEach(id => favorites.delete(id));
+    Object.keys(favMeta).forEach(k => delete favMeta[k]);
+    save();
+    document.querySelectorAll('.card.favorited, .platform-card.favorited').forEach(c => c.classList.remove('favorited'));
+    document.querySelectorAll('.fav-btn.on, .platform-fav.on').forEach(b => { b.classList.remove('on'); b.textContent = '♡'; });
+    updateCountBadge();
+    renderSavedChips();
+    showToast('🗑️', 'All favorites cleared');
+  }
+
+  function updateCountBadge() {
+    document.getElementById('count-num').textContent = favorites.size;
+  }
+
+  // ── TABS ──────────────────────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(icon, msg) {
+    const t = document.getElementById('toast');
+    document.querySelector('#toast .t-icon').textContent = icon;
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────────────
+  const PALETTE = [
+    'linear-gradient(135deg,#1e1b4b,#312e81)',
+    'linear-gradient(135deg,#1a1a2e,#16213e)',
+    'linear-gradient(135deg,#14532d,#166534)',
+    'linear-gradient(135deg,#3b0764,#4c1d95)',
+    'linear-gradient(135deg,#7c2d12,#9a3412)',
+    'linear-gradient(135deg,#0c4a6e,#075985)',
+  ];
+  function getBg(id) { return PALETTE[id.charCodeAt(id.length-1) % PALETTE.length]; }
+
+  // ── INIT ──────────────────────────────────────────────────────────
+  renderGrid('books-grid', DATA.books);
+  renderGrid('games-grid', DATA.games);
+  renderGrid('podcasts-grid', DATA.podcasts);
+  renderGrid('streaming-grid', DATA.streaming);
+  renderSocial();
+  updateCountBadge();
+</script>
+</body>
+</html>
